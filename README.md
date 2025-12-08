@@ -1,11 +1,26 @@
-# ZMK Module Template
+# Splitkb.com ZMK sleep driver
 
-This repository contains a template for a ZMK module, as it would most frequently be used. 
+Splitkb.com wireless Halcyon controller has a seperate net to turn on or off the 3V3 on the VIK connector. As ZMK, as of 2026-01-29, does not have support for multiple externel power nets, this adds a manual function to enable or disable the VIK power net when the board goes to sleep.
 
-## Usage
+This can be added using the following devicetree options:
+```
+/ {
+    vik_sleep: vik_sleep_mgr {
+        compatible = "splitkb,vik-sleep";
+        status = "okay";
+        control-gpios = <&halcyon_conn 33 GPIO_ACTIVE_HIGH>; 
+    };
+};
+```
 
-Read through the [ZMK Module Creation](https://zmk.dev/docs/development/module-creation) page for details on how to configure this template.
-
-## More Info
-
-For more info on modules, you can read through  through the [Zephyr modules page](https://docs.zephyrproject.org/3.5.0/develop/modules.html) and [ZMK's page on using modules](https://zmk.dev/docs/features/modules). [Zephyr's west manifest page](https://docs.zephyrproject.org/3.5.0/develop/west/manifest.html#west-manifests) may also be of use.
+As only shutting down the nets does not completely stop all current draw, some specific `CS`, `BUSY`, `DC` or `RESET` pins also have to be "disabled". In your shield add another node:
+```
+&vik_sleep {
+    epaper_pins {
+        output-gpios = <&vik_conn 6 GPIO_ACTIVE_LOW>,  // CS
+		               <&vik_conn 3 GPIO_ACTIVE_LOW>,  // RESET
+					   <&vik_conn 0 GPIO_ACTIVE_HIGH>; // DC
+        input-gpios = <&vik_conn 5 GPIO_ACTIVE_HIGH>;  // BUSY
+    };
+};
+```
